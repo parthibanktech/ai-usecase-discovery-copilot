@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+venv
+.env
+.env.*
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+Thumbs.db
+AI_Discovery_*.md
+llm_foundations_banner_*.jpg
+llm_roadmap_infographic_*.jpg
+llm_infographic_*.png

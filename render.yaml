@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-use-case-discovery-copilot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python 10_production_grade_app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GRADIO_SERVER_NAME
+        value: 0.0.0.0
+      - key: DEEPSEEK_API_KEY
+        sync: false # Set securely in the Render dashboard
