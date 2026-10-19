@@ -245,24 +245,33 @@ app_theme = gr.themes.Soft(
 
 with gr.Blocks(title="AI Use-Case Discovery Copilot") as demo:
     
-    # 1. CLEAR HEADER: WHAT THIS APP IS & WHY IT IS USEFUL
+    # 1. CLEAR HEADER: WHAT THIS APP IS & EXACT INPUT ➔ OUTPUT USAGE
     with gr.Row():
         gr.Markdown("""
         # 🧠 Enterprise AI Use-Case Discovery Copilot
         
-        ### **What is this application?**
-        An automated **AI Feasibility & Strategy Copilot** designed for operations managers, product leads, and enterprise AI teams.
+        ### 🎯 What is this app?
+        An automated **AI Feasibility & Strategy Engine** that evaluates whether an operational problem is worth solving with Generative AI before wasting engineering budget.
         
-        ### **Why is it useful?**
-        **Over 80% of enterprise AI projects fail** because teams pick high-complexity projects that deliver low business ROI. This copilot solves that bottleneck:
-        - ⚡ **Instant Feasibility Scoring**: Evaluates manual business problems and scores **Business Value (1-10)** vs **Technical Complexity (1-10)** in seconds.
-        - 🎯 **2x2 Portfolio Matrix**: Automatically categorizes initiatives into **Quick Wins** (build first!), **Strategic Bets**, or **Reconsider** (avoid!).
-        - 🗺️ **Actionable 2-Week MVP Roadmap**: Outlines exact sequential steps, required internal data assets, and critical risk guardrails.
+        ---
+        
+        ### 📥 What You Provide ➔ 📤 What The Copilot Gives You:
+        
+        | 📥 What You Enter (Input) | 📤 What You Get Back in 10s (Deliverable) |
+        | :--- | :--- |
+        | 🏢 **Industry Domain & Role** *(e.g. Logistics, VP of Ops)* | 🎯 **2x2 Portfolio Classification**: Is it a **🟢 QUICK WIN** (Build first!), **🔵 STRATEGIC**, or **🔴 RECONSIDER** (Avoid)? |
+        | ⚠️ **Operational Bottleneck** *(What is slow, expensive, or painful)* | 📊 **Feasibility Scores**: **Business Value / ROI (1–10)** vs. **Technical Complexity (1–10)** |
+        | ✍️ **Repetitive Tasks Done by Hand** *(What humans do manually)* | 💡 **Recommended AI Use Case**: The single best AI architecture to build first |
+        | 🎯 **Desired Target Outcome** *(e.g. 80% faster turnaround)* | 🗺️ **2-Week Prototype MVP Roadmap**: Step 1 ➔ Step 2 ➔ Step 3 ➔ Step 4 |
+        | 🎛️ **Analysis Mode** *(Conservative, Balanced, or Creative)* | 🗄️ **Data & APIs Needed**: Exactly what internal databases, PDFs, or APIs are required |
+        | | 🛡️ **Risk Guardrails**: Hallucination mitigations, security, and compliance checks |
+        | | 📥 **1-Click Executive Brief (.md)**: Download a client-ready proposal to share with executives |
         """)
 
     gr.Markdown("---")
 
     # 2. INSTANT DEMO BUTTONS
+
     gr.Markdown("### ⚡ Click any industry scenario below to test live in 1-click:")
     with gr.Row():
         btn_logistics = gr.Button("🚚 Logistics (Shipment Delays)", variant="secondary")
