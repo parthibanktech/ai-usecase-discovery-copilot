@@ -14,7 +14,8 @@ A production-grade, progressive curriculum and enterprise application suite for 
 ## 📂 Project Structure & Architecture
 
 ### 🚀 Production Application (Root)
-* **[`app.py`](app.py)** (and [`10_production_grade_app.py`](10_production_grade_app.py)): The main enterprise AI Use-Case Discovery Copilot. Features 2x2 Feasibility Matrix scoring, Pydantic v2 data validation, 1-click Markdown export, and historical discovery comparison.
+* **[`app.py`](app.py)**: The main enterprise AI Use-Case Discovery Copilot. Features 2x2 Feasibility Matrix scoring, Pydantic v2 data validation, 1-click Markdown export, and historical discovery comparison.
+
 
 ### 📚 Hands-on Learning Curriculum (`learning/`)
 

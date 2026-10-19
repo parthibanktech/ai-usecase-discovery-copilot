@@ -13,7 +13,7 @@ PRODUCTION-GRADE FEATURES:
 6. Enterprise Observability & Token Metrics (latency, token estimation)
 
 RUN:
-    uv run 10_production_grade_app.py
+    uv run app.py
 Then open http://127.0.0.1:7860
 """
 

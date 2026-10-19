@@ -41,7 +41,8 @@ jobs:
           from pydantic import BaseModel, Field
 
           # Validate schema definitions
-          from 10_production_grade_app import UseCaseAssessment
+          from app import UseCaseAssessment
           assert issubclass(UseCaseAssessment, BaseModel)
+
           print('✅ Production Pydantic contracts validated successfully.')
           "
