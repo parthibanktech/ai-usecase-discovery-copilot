@@ -1,17 +1,8 @@
 """
 AI Use-Case Discovery Copilot (Production-Grade)
 ================================================
-An enterprise-grade AI Discovery Assistant that converts messy operational
-bottlenecks into rigorously scored, Pydantic-validated AI transformation roadmaps.
-
-FEATURES:
-1. Real-time Streaming Generation & Dynamic Reasoning Feedback
-2. Pydantic v2 Type-Safe Contracts & Range Validation
-3. 2x2 Feasibility Matrix (Quick Win, Strategic Investment, etc.)
-4. 1-Click Client-Ready Markdown Brief Export
-5. Built-in Multi-Industry Demo Examples (Logistics, Fintech, Healthcare, Retail)
-6. Session History & Cross-Department Comparison Matrix
-7. Cloud-Ready (Dynamic PORT & Host for Render, Docker, Hugging Face)
+An enterprise AI Strategy & Feasibility Copilot that converts manual business
+bottlenecks into rigorously evaluated, scored AI implementation roadmaps.
 
 RUN:
     uv run app.py
@@ -28,22 +19,20 @@ import gradio as gr
 
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 
 # --- 1. Credential & Environment Verification ------------------------------
 load_dotenv()
 api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
 if not api_key or api_key == "your_deepseek_api_key_here":
-    print("❌ No API key found. Please check your .env file.")
-    exit(1)
+    print("WARNING: No DEEPSEEK_API_KEY found in .env file.")
 
-# --- 2. Production Data Contracts (Pydantic Schemas) -----------------------
+# --- 2. Production Data Contracts (Pydantic Schema) ------------------------
 class UseCaseAssessment(BaseModel):
     """Production schema for structured AI feasibility evaluation."""
     domain: str = Field(description="The enterprise industry or domain")
     problem_summary: str = Field(description="Executive 1-line summary of the core operational pain point")
     recommended_use_case: str = Field(description="The single most practical, high-ROI AI use case to build first")
-    quadrant: str = Field(description="One of: 'Quick Win' (High Value/Low Complexity), 'Strategic Investment' (High/High), 'Low Hanging Fruit' (Low/Low), or 'Reconsider' (Low/High)")
+    quadrant: str = Field(description="One of: 'QUICK WIN' (High Value/Low Complexity), 'STRATEGIC INVESTMENT' (High/High), 'LOW HANGING FRUIT' (Low/Low), or 'RECONSIDER' (Low/High)")
     business_value_score: int = Field(ge=1, le=10, description="Business impact & ROI from 1 to 10")
     complexity_score: int = Field(ge=1, le=10, description="Technical and integration difficulty from 1 to 10")
     alternative_ideas: list[str] = Field(description="4 other potential AI use cases for this problem")
@@ -51,12 +40,12 @@ class UseCaseAssessment(BaseModel):
     prototype_roadmap: list[str] = Field(description="4 sequential, actionable steps to build the first 2-week MVP")
     risks_and_guardrails: list[str] = Field(description="2 key hallucination, security, or compliance guardrails required")
 
-# --- 3. Prompt Engineering Architecture -----------------------------------
+# --- 3. Prompt Architecture ------------------------------------------------
 system_prompt = (
     "You are a Principal AI Solutions Architect and Enterprise Transformation Consultant.\n"
     "Your mission: Evaluate operational business bottlenecks with extreme rigor, honesty, and pragmatic engineering realism.\n"
     "Avoid vague AI buzzwords. Provide concrete architectures, specific data requirements, and honest 1-10 scores.\n"
-    "Categorize the initiative into the classic 2x2 portfolio matrix: Quick Win, Strategic Investment, Low Hanging Fruit, or Reconsider."
+    "Categorize the initiative into the classic 2x2 portfolio matrix: QUICK WIN, STRATEGIC INVESTMENT, LOW HANGING FRUIT, or RECONSIDER."
 )
 
 human_template = (
@@ -73,43 +62,74 @@ prompt_template = ChatPromptTemplate.from_messages([
     ("human", human_template),
 ])
 
-# In-memory session history for enterprise comparison
 session_history = []
 
-# --- 4. Core Discovery Engine ----------------------------------------------
+# --- 4. Preset Industry Scenarios (Instant Demo Data) ----------------------
+SCENARIOS = {
+    "logistics": (
+        "Supply Chain & Logistics",
+        "VP of Global Operations",
+        "Shipment delays caused by extreme weather are manually triaged across 15 carrier portals with 4-hour customer lag.",
+        "Copying tracking numbers, checking portal statuses, manually writing delay emails to clients.",
+        "Real-time delay detection and draft messages ready for 1-click human review.",
+        "Balanced (0.3 - Feasibility Analysis)"
+    ),
+    "fintech": (
+        "Commercial Banking & FinTech",
+        "Head of Credit Underwriting",
+        "Underwriters spend 3.5 hours per applicant manually extracting and reconciling data from unstructured tax returns, balance sheets, and bank PDFs.",
+        "Manual data extraction from PDF statements into Excel debt-service coverage ratio (DSCR) models.",
+        "Automated PDF financial table extraction, ratio calculation, and red-flag audit summary.",
+        "Conservative (0.1 - Audit & Code)"
+    ),
+    "healthcare": (
+        "Clinical Research & Healthcare",
+        "Clinical Trial Director",
+        "Eligible oncology patients face 3-week delays entering trials because oncologists must cross-reference patient histories against 40-page inclusion criteria.",
+        "Reviewing oncologist clinical notes, lab records, and comparing against inclusion/exclusion rules.",
+        "Instant matching score of patient EHR data against trial protocols with highlighted contraindications.",
+        "Conservative (0.1 - Audit & Code)"
+    ),
+    "retail": (
+        "E-Commerce & Retail",
+        "Customer Experience Lead",
+        "Customer support agents spend 45% of their workday reviewing high-volume return claims and investigating potential refund fraud.",
+        "Cross-checking photo evidence, return tracking timestamps, and past customer order history.",
+        "Instant return approval for low-risk orders, fraud score flagging, and auto-drafted customer resolutions.",
+        "Balanced (0.3 - Feasibility Analysis)"
+    )
+}
+
+def load_scenario(key: str):
+    return SCENARIOS.get(key, SCENARIOS["logistics"])
+
+# --- 5. Discovery Engine ---------------------------------------------------
 def run_discovery_pipeline(domain, role, problem, task, outcome, creativity_level):
-    """
-    Executes the enterprise discovery pipeline:
-    Validates input -> Chains prompt to structured LLM -> Generates report -> Formats deliverables.
-    """
     if not problem.strip() or not domain.strip():
         yield (
-            "⚠️ **Validation Error**: Please provide at least the Industry Domain and Business Problem to proceed.",
+            "### ⚠️ Validation Error\nPlease provide at least the **Industry Domain** and **Business Problem** to proceed.",
             None,
             get_history_markdown()
         )
         return
 
-    # Map UI radio to model temperature
     temp_map = {
         "Conservative (0.1 - Audit & Code)": 0.1,
         "Balanced (0.3 - Feasibility Analysis)": 0.3,
         "Creative (0.7 - Idea Generation)": 0.7
     }
     temperature = temp_map.get(creativity_level, 0.3)
-
     start_time = time.time()
-    
-    # Progress notification
+
     yield (
-        "⏳ *Initializing AI Solutions Architect Engine... Configuring Pydantic schema validation...*",
+        "### ⏳ Evaluating Feasibility...\n*Running LangChain LCEL chain with DeepSeek and Pydantic v2 validation...*",
         None,
         get_history_markdown()
     )
 
     try:
-        # Initialize LangChain LLM with Structured Output enforcement
-        llm = ChatDeepSeek(model="deepseek-chat", temperature=temperature)
+        current_api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+        llm = ChatDeepSeek(model="deepseek-chat", temperature=temperature, api_key=current_api_key)
         structured_llm = llm.with_structured_output(UseCaseAssessment)
         chain = prompt_template | structured_llm
 
@@ -117,23 +137,17 @@ def run_discovery_pipeline(domain, role, problem, task, outcome, creativity_leve
             "domain": domain,
             "role": role or "Department Lead",
             "problem": problem,
-            "task": task or "Manual triage and repetitive data entry",
+            "task": task or "Manual data extraction and repetitive triage",
             "outcome": outcome or "Operational efficiency and cost reduction",
         }
-
-        yield (
-            "🧠 *Reasoning on technical complexity, data dependencies, and ROI score distribution...*",
-            None,
-            get_history_markdown()
-        )
 
         assessment: UseCaseAssessment = chain.invoke(input_payload)
         elapsed = round(time.time() - start_time, 2)
 
-        # Build Enterprise Markdown Report
+        # Build clean markdown brief
         report = format_markdown_report(assessment, elapsed, creativity_level)
 
-        # Save to session history
+        # Save session history
         history_entry = {
             "timestamp": datetime.now().strftime("%H:%M:%S"),
             "domain": assessment.domain,
@@ -145,7 +159,6 @@ def run_discovery_pipeline(domain, role, problem, task, outcome, creativity_leve
         }
         session_history.insert(0, history_entry)
 
-        # Generate downloadable file artifact
         export_filename = f"AI_Discovery_{assessment.domain.replace(' ', '_')}_{int(time.time())}.md"
         with open(export_filename, "w", encoding="utf-8") as f:
             f.write(report)
@@ -157,52 +170,46 @@ def run_discovery_pipeline(domain, role, problem, task, outcome, creativity_leve
         )
 
     except Exception as e:
-        error_msg = f"❌ **Pipeline Execution Failed**: {str(e)}\n\n*Check your API key, balance, or internet connectivity.*"
+        error_msg = f"### ❌ Pipeline Execution Failed\n\n**Error Details:** `{str(e)}`\n\n*Please verify your `DEEPSEEK_API_KEY` in `.env` or Render environment settings.*"
         yield (error_msg, None, get_history_markdown())
 
 
 def format_markdown_report(data: UseCaseAssessment, elapsed: float, creativity: str) -> str:
-    """Formats the structured assessment into an executive-ready brief."""
-    
-    # Quadrant Badge Color
-    q_colors = {
-        "Quick Win": "🟢 **QUICK WIN** *(High Impact / Low Complexity — Build First!)*",
-        "Strategic Investment": "🔵 **STRATEGIC INVESTMENT** *(High Impact / High Complexity)*",
-        "Low Hanging Fruit": "🟡 **LOW HANGING FRUIT** *(Low Impact / Low Complexity)*",
-        "Reconsider": "🔴 **RECONSIDER** *(Low Impact / High Complexity — Avoid)*"
-    }
-    quadrant_display = q_colors.get(data.quadrant, f"**{data.quadrant}**")
+    # Quadrant indicators
+    q_badge = {
+        "QUICK WIN": "🟢 **QUICK WIN** (High Value / Low Complexity — *Build First!*)",
+        "STRATEGIC INVESTMENT": "🔵 **STRATEGIC INVESTMENT** (High Value / High Complexity)",
+        "LOW HANGING FRUIT": "🟡 **LOW HANGING FRUIT** (Low Value / Low Complexity)",
+        "RECONSIDER": "🔴 **RECONSIDER** (Low Value / High Complexity — *Avoid*)"
+    }.get(data.quadrant.upper(), f"**{data.quadrant}**")
 
-    # Star rating generator
-    stars = "⭐" * int(data.business_value_score / 2)
+    # Star rating
+    stars = "⭐" * int(round(data.business_value_score / 2))
 
-    report = f"""# 📊 AI Feasibility & Discovery Brief
-**Industry Domain:** {data.domain} | **Evaluation Latency:** `{elapsed}s` | **Sampling Mode:** `{creativity.split(' ')[0]}`
+    report = f"""# 📊 AI Feasibility & Executive Brief
 
----
-
-### 🎯 Portfolio Classification
-{quadrant_display}
+### 🎯 Portfolio Classification: {q_badge}
 
 | Strategic Metric | Score | Evaluation Benchmark |
 | :--- | :---: | :--- |
 | **Business Value & ROI** | **{data.business_value_score} / 10** {stars} | High operational impact, cost reduction, or revenue acceleration |
 | **Technical Complexity** | **{data.complexity_score} / 10** | Integration overhead, API dependencies, risk level |
+| **Evaluation Speed** | **{elapsed}s** | Validated via Pydantic v2 structured output |
 
 ---
 
-### 💡 Primary Recommended Use Case
-> ### **{data.recommended_use_case}**
+### 💡 Primary Recommended AI Use Case
+> ## **{data.recommended_use_case}**
 *Problem Solved:* {data.problem_summary}
 
 ---
 
-### 🗺️ Two-Week Prototype Roadmap
+### 🗺️ 2-Week Prototype MVP Roadmap
 """
     for idx, step in enumerate(data.prototype_roadmap, start=1):
         report += f"{idx}. **Phase {idx}**: {step}\n"
 
-    report += "\n---\n\n### 📦 Required Data Assets & APIs\n"
+    report += "\n---\n\n### 📦 Required Internal Data Assets & APIs\n"
     for item in data.required_data_sources:
         report += f"- 🗄️ {item}\n"
 
@@ -210,220 +217,167 @@ def format_markdown_report(data: UseCaseAssessment, elapsed: float, creativity: 
     for risk in data.risks_and_guardrails:
         report += f"- ⚠️ {risk}\n"
 
-    report += "\n---\n\n### 💡 Alternative Use-Case Backlog\n"
+    report += "\n---\n\n### 💡 Alternative Backlog Ideas\n"
     for alt in data.alternative_ideas:
         report += f"- 🔹 {alt}\n"
 
-    report += "\n\n*Generated by AI Use-Case Discovery Copilot • Pydantic v2 + LangChain LCEL Architecture*"
+    report += f"\n\n*Generated by AI Use-Case Discovery Copilot • Domain: {data.domain} • Mode: {creativity.split(' ')[0]}*"
     return report
 
 
 def get_history_markdown() -> str:
-    """Renders the historical comparison table for current session."""
     if not session_history:
-        return "*No use cases evaluated yet in this session. Select an example below or run your first assessment.*"
+        return "*No use cases evaluated yet in this session. Click any scenario button above to run a demo.*"
 
-    md = "| Time | Domain | Recommended Use Case | Value | Complexity | Portfolio Matrix |\n"
+    md = "| Time | Industry Domain | Recommended AI Use Case | Business Value | Complexity | Portfolio Quadrant |\n"
     md += "| :--- | :--- | :--- | :---: | :---: | :--- |\n"
     for item in session_history[:8]:
-        md += f"| {item['timestamp']} | **{item['domain']}** | {item['use_case'][:40]}... | {item['value']} | {item['complexity']} | `{item['quadrant']}` |\n"
+        md += f"| {item['timestamp']} | **{item['domain']}** | {item['use_case'][:42]}... | `{item['value']}` | `{item['complexity']}` | **{item['quadrant']}** |\n"
     return md
 
 
-# --- 5. Interactive Demo Examples (1-Click Client Demos) -------------------
-DEMO_EXAMPLES = [
-    [
-        "Supply Chain & Logistics",
-        "VP of Operations",
-        "Shipment delays caused by weather are manually triaged across 15 carrier portals with 4-hour customer lag.",
-        "Copying tracking numbers, checking status across carrier sites, drafting individual client delay emails.",
-        "Real-time delay detection and draft client messages ready for 1-click human review.",
-        "Balanced (0.3 - Feasibility Analysis)"
-    ],
-    [
-        "Fintech & Commercial Banking",
-        "Head of Underwriting",
-        "Loan officers spend 3.5 hours per applicant cross-referencing tax returns, balance sheets, and bank PDFs.",
-        "Manual data extraction from PDF statements into Excel debt-service coverage ratio (DSCR) models.",
-        "Automated PDF financial table extraction, ratio calculation, and red-flag audit summary.",
-        "Conservative (0.1 - Audit & Code)"
-    ],
-    [
-        "Healthcare & Life Sciences",
-        "Clinical Trial Director",
-        "Patients are delayed 3 weeks getting into cancer trials because doctors manually check 40-page protocol criteria.",
-        "Reading oncologist clinical notes and comparing against clinicaltrials.gov inclusion/exclusion rules.",
-        "Instant matching score of patient EHR data against trial protocols with highlighted contraindications.",
-        "Conservative (0.1 - Audit & Code)"
-    ],
-    [
-        "E-Commerce & Retail",
-        "Customer Support Lead",
-        "Support agents spend 45% of time resolving return requests and investigating potential refund fraud.",
-        "Comparing photo evidence, return tracking timestamps, and past customer order history.",
-        "Automated return approval for low-risk orders, fraud score flagging, and auto-drafted customer resolutions.",
-        "Balanced (0.3 - Feasibility Analysis)"
-    ]
-]
+# --- 6. Gradio Interface Construction --------------------------------------
+app_theme = gr.themes.Soft(
+    primary_hue="blue",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"]
+)
 
-
-# --- 6. Modern Enterprise Gradio Web Interface -----------------------------
-custom_css = """
-#app-container { max-width: 1280px; margin: 0 auto; padding: 10px; }
-.hero-header {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 24px 30px;
-    margin-bottom: 24px;
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-}
-.status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: #34D399;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-}
-.status-dot {
-    width: 6px;
-    height: 6px;
-    background: #34D399;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #34D399;
-}
-.section-card {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    padding: 20px;
-}
-"""
-
-with gr.Blocks(
-    title="AI Use-Case Discovery Copilot",
-    theme=gr.themes.Soft(primary_hue="cyan", neutral_hue="slate"),
-    css=custom_css
-) as demo:
+with gr.Blocks(title="AI Use-Case Discovery Copilot") as demo:
     
-    with gr.Column(elem_id="app-container"):
+    # 1. CLEAR HEADER: WHAT THIS APP IS & WHY IT IS USEFUL
+    with gr.Row():
+        gr.Markdown("""
+        # 🧠 Enterprise AI Use-Case Discovery Copilot
         
-        # HERO BANNER
-        with gr.Row(elem_classes=["hero-header"]):
-            with gr.Column():
-                gr.HTML("""
-                <div class="status-pill">
-                    <span class="status-dot"></span> Production Engine Active • LangChain LCEL • Pydantic v2
-                </div>
-                <h1 style="font-size: 28px; font-weight: 800; margin: 0 0 8px 0; color: #F8FAFC;">
-                    🧠 Enterprise AI Use-Case Discovery Copilot
-                </h1>
-                <p style="color: #94A3B8; font-size: 15px; margin: 0;">
-                    Turn messy operational business bottlenecks into scored, Pydantic-validated AI implementation roadmaps with 2x2 Feasibility Matrix categorization.
-                </p>
-                """)
+        ### **What is this application?**
+        An automated **AI Feasibility & Strategy Copilot** designed for operations managers, product leads, and enterprise AI teams.
+        
+        ### **Why is it useful?**
+        **Over 80% of enterprise AI projects fail** because teams pick high-complexity projects that deliver low business ROI. This copilot solves that bottleneck:
+        - ⚡ **Instant Feasibility Scoring**: Evaluates manual business problems and scores **Business Value (1-10)** vs **Technical Complexity (1-10)** in seconds.
+        - 🎯 **2x2 Portfolio Matrix**: Automatically categorizes initiatives into **Quick Wins** (build first!), **Strategic Bets**, or **Reconsider** (avoid!).
+        - 🗺️ **Actionable 2-Week MVP Roadmap**: Outlines exact sequential steps, required internal data assets, and critical risk guardrails.
+        """)
 
-        # MAIN INPUT / OUTPUT SPLIT
-        with gr.Row():
+    gr.Markdown("---")
+
+    # 2. INSTANT DEMO BUTTONS
+    gr.Markdown("### ⚡ Click any industry scenario below to test live in 1-click:")
+    with gr.Row():
+        btn_logistics = gr.Button("🚚 Logistics (Shipment Delays)", variant="secondary")
+        btn_fintech = gr.Button("💳 Banking (Loan Doc Extraction)", variant="secondary")
+        btn_healthcare = gr.Button("🏥 Healthcare (Trial Matching)", variant="secondary")
+        btn_retail = gr.Button("🛍️ Retail (Return Fraud Triage)", variant="secondary")
+
+    gr.Markdown("---")
+
+    # 3. MAIN WORKSPACE (2 COLUMNS)
+    with gr.Row():
+        
+        # LEFT: Inputs
+        with gr.Column(scale=5):
+            gr.Markdown("### 🏢 1. Business Problem Input")
             
-            # LEFT: Input Parameters
-            with gr.Column(scale=5, elem_classes=["section-card"]):
-                gr.Markdown("### 🏢 Business Bottleneck Input")
-                
-                with gr.Row():
-                    domain = gr.Textbox(
-                        label="Industry / Domain",
-                        placeholder="e.g. Supply Chain & Logistics",
-                        value="Supply Chain & Logistics",
-                        scale=3
-                    )
-                    role = gr.Textbox(
-                        label="Target Stakeholder",
-                        placeholder="e.g. VP of Operations",
-                        value="VP of Operations",
-                        scale=2
-                    )
-
-                problem = gr.Textbox(
-                    label="Operational Bottleneck (The Problem)",
-                    placeholder="Describe what is slow, expensive, or error-prone...",
-                    value="Shipment delays caused by weather are manually triaged across 15 carrier portals with 4-hour customer lag.",
-                    lines=3
+            with gr.Row():
+                domain = gr.Textbox(
+                    label="Industry Domain",
+                    value="Supply Chain & Logistics",
+                    placeholder="e.g. Logistics, FinTech, Healthcare",
+                    scale=3
                 )
-                task = gr.Textbox(
-                    label="Repetitive Tasks Done by Hand Today",
-                    placeholder="What specific tasks are humans doing manually?",
-                    value="Copying tracking numbers, checking status across carrier sites, drafting individual client delay emails.",
-                    lines=2
-                )
-                outcome = gr.Textbox(
-                    label="Desired Target Metric / Business Outcome",
-                    placeholder="e.g. 80% faster notification, zero missed delays",
-                    value="Real-time delay detection and draft client messages ready for 1-click human review.",
-                    lines=1
-                )
-                
-                creativity = gr.Radio(
-                    choices=[
-                        "Conservative (0.1 - Audit & Code)",
-                        "Balanced (0.3 - Feasibility Analysis)",
-                        "Creative (0.7 - Idea Generation)"
-                    ],
-                    value="Balanced (0.3 - Feasibility Analysis)",
-                    label="Analysis Mode (Model Temperature)"
+                role = gr.Textbox(
+                    label="Stakeholder Role",
+                    value="VP of Global Operations",
+                    placeholder="e.g. VP of Operations",
+                    scale=2
                 )
 
-                submit_btn = gr.Button("🚀 Run AI Feasibility Assessment", variant="primary", size="lg")
+            problem = gr.Textbox(
+                label="Operational Bottleneck (The Core Problem)",
+                value="Shipment delays caused by extreme weather are manually triaged across 15 carrier portals with 4-hour customer lag.",
+                placeholder="Describe what is slow, expensive, or painful...",
+                lines=3
+            )
+            
+            task = gr.Textbox(
+                label="Repetitive Tasks Done by Hand Today",
+                value="Copying tracking numbers, checking portal statuses, manually writing delay emails to clients.",
+                placeholder="What specific tasks are humans doing manually?",
+                lines=2
+            )
+            
+            outcome = gr.Textbox(
+                label="Desired Business Metric / Target Outcome",
+                value="Real-time delay detection and draft messages ready for 1-click human review.",
+                placeholder="e.g. 80% faster notification, zero missed delays",
+                lines=1
+            )
+            
+            creativity = gr.Radio(
+                choices=[
+                    "Conservative (0.1 - Audit & Code)",
+                    "Balanced (0.3 - Feasibility Analysis)",
+                    "Creative (0.7 - Idea Generation)"
+                ],
+                value="Balanced (0.3 - Feasibility Analysis)",
+                label="Analysis Mode (Model Temperature)"
+            )
 
-            # RIGHT: Executive Assessment Output
-            with gr.Column(scale=6, elem_classes=["section-card"]):
-                gr.Markdown("### 📋 Executive Feasibility Brief & Roadmap")
-                output_report = gr.Markdown(value="*Select an industry example below or enter a business problem on the left, then click 'Run AI Feasibility Assessment'.*")
-                download_file = gr.File(label="📥 Download Executive Brief (.md)", visible=True)
+            submit_btn = gr.Button("🚀 Run AI Feasibility Assessment", variant="primary", size="lg")
 
-        # INTERACTIVE DEMO EXAMPLES
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("### ⚡ Clickable Demo Examples (Instant Pre-fill)")
-                gr.Examples(
-                    examples=DEMO_EXAMPLES,
-                    inputs=[domain, role, problem, task, outcome, creativity],
-                    label="Select any industry scenario to test live:"
-                )
+        # RIGHT: Output Report
+        with gr.Column(scale=7):
+            gr.Markdown("### 📋 2. Executive Feasibility Brief & Roadmap")
+            output_report = gr.Markdown(
+                value="*Click any demo scenario button above, then click **'Run AI Feasibility Assessment'** to generate a complete roadmap.*"
+            )
+            download_file = gr.File(label="📥 Download Executive Brief (.md)", visible=True)
 
-        # SESSION COMPARISON MATRIX
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("### 📈 Session Discovery Comparison Matrix")
-                history_table = gr.Markdown(value=get_history_markdown())
+    gr.Markdown("---")
 
-        # ARCHITECTURE COLLAPSIBLE
-        with gr.Accordion("🔍 Behind the Scenes: Enterprise AI Architecture", open=False):
-            gr.Markdown("""
-            **How this application works under the hood:**
-            1. **`ChatPromptTemplate`**: Decouples business problem variables from prompt steering.
-            2. **`ChatDeepSeek` / OpenAI Compatible Engine**: Configured with dynamic sampling temperature (`0.1` to `0.7`).
-            3. **`Pydantic v2` Contract (`UseCaseAssessment`)**: Validates typed fields (`business_value_score`, `complexity_score`), enforcing exact integer bounds ($1$ to $10$) and 2x2 matrix categorization.
-            4. **`LCEL` Pipe Operator**: `chain = prompt | structured_llm` guarantees typed, structured delivery without fragile regex.
-            5. **Cloud Deployment**: Automated Docker & Render Blueprint with dynamic port binding.
-            """)
+    # 4. SESSION HISTORY BENCHMARK
+    with gr.Row():
+        with gr.Column():
+            gr.Markdown("### 📈 Cross-Department Discovery Matrix (Session History)")
+            history_table = gr.Markdown(value=get_history_markdown())
 
-        # Event Binding
-        submit_btn.click(
-            fn=run_discovery_pipeline,
-            inputs=[domain, role, problem, task, outcome, creativity],
-            outputs=[output_report, download_file, history_table]
-        )
+    # 5. ARCHITECTURE DETAILS
+    with gr.Accordion("🔍 Under the Hood: Production Architecture & Tech Stack", open=False):
+        gr.Markdown("""
+        - **LangChain LCEL**: Declarative execution chain (`prompt | structured_llm`)
+        - **Pydantic v2**: Strict schema validation enforcing integer bounds ($1$ to $10$) and 2x2 matrix classification
+        - **DeepSeek / OpenAI Engine**: OpenAI-compatible LLM endpoint with dynamic temperature switching
+        - **Cloud Deployment**: Automated Dockerfile and Render Blueprint (`render.yaml`)
+        """)
 
-# Cloud & Local Launch Configuration
+    # --- Button Wiring ---
+    btn_logistics.click(
+        fn=lambda: load_scenario("logistics"),
+        outputs=[domain, role, problem, task, outcome, creativity]
+    )
+    btn_fintech.click(
+        fn=lambda: load_scenario("fintech"),
+        outputs=[domain, role, problem, task, outcome, creativity]
+    )
+    btn_healthcare.click(
+        fn=lambda: load_scenario("healthcare"),
+        outputs=[domain, role, problem, task, outcome, creativity]
+    )
+    btn_retail.click(
+        fn=lambda: load_scenario("retail"),
+        outputs=[domain, role, problem, task, outcome, creativity]
+    )
+
+    submit_btn.click(
+        fn=run_discovery_pipeline,
+        inputs=[domain, role, problem, task, outcome, creativity],
+        outputs=[output_report, download_file, history_table]
+    )
+
+# Launch
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
     server_name = os.getenv("GRADIO_SERVER_NAME", "0.0.0.0")
-    print(f"🚀 Starting Production AI Discovery Copilot on {server_name}:{port} ...")
-    demo.launch(server_name=server_name, server_port=port)
+    print(f"Starting Production AI Discovery Copilot on {server_name}:{port} ...")
+    demo.launch(server_name=server_name, server_port=port, theme=app_theme)
