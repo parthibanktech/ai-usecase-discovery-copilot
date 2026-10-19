@@ -3,7 +3,8 @@ services:
     name: ai-use-case-discovery-copilot
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python 10_production_grade_app.py
+    startCommand: python app.py
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

@@ -28,7 +28,9 @@ jobs:
 
       - name: Verify Python Syntax Across All Scripts
         run: |
-          python -m py_compile *.py
+          python -m compileall -q -x "\.venv" .
+
+
 
       - name: Verify Package Imports & Pydantic Schema Contracts
         run: |

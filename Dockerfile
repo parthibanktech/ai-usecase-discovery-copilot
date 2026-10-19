@@ -25,4 +25,5 @@ COPY . .
 EXPOSE 7860
 
 # Launch production app
-CMD ["python", "10_production_grade_app.py"]
+CMD ["python", "app.py"]
+

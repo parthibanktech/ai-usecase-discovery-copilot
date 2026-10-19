@@ -11,22 +11,26 @@ A production-grade, progressive curriculum and enterprise application suite for 
 
 ---
 
-## 📂 Project Structure & Learning Progression
+## 📂 Project Structure & Architecture
 
-| File | Module | Key Architectural Concepts |
-| :--- | :--- | :--- |
-| [`00_setup_check.py`](00_setup_check.py) | **Environment Setup** | Python 3.11+, `uv` package manager, `.env` secret hygiene |
-| [`01_first_llm_call.py`](01_first_llm_call.py) | **Raw API Protocol** | OpenAI-compatible DeepSeek client, request payload, tokens vs words |
-| [`02_why_a_framework.py`](02_why_a_framework.py) | **Framework Abstraction** | Raw HTTP boilerplate vs LangChain unified `.invoke()` |
-| [`03_temperature.py`](03_temperature.py) | **Temperature Tuning** | Deterministic (0.0) for code/audit vs Creative (0.9) for ideation |
-| [`04_system_and_user_roles.py`](04_system_and_user_roles.py) | **System vs User Roles** | Persona steering: SRE incident analysis vs Business executive summary |
-| [`05_streaming.py`](05_streaming.py) | **Token Streaming** | `.stream()`, Time-To-First-Token (TTFT), real-time terminal UX |
-| [`06_prompt_templates.py`](06_prompt_templates.py) | **Prompt Templates** | `ChatPromptTemplate` with `{placeholders}` for code/data decoupling |
-| [`07_structured_output.py`](07_structured_output.py) | **Structured Outputs** | Pydantic `BaseModel` & `Field` for strongly-typed data contracts |
-| [`08_chain_lcel.py`](08_chain_lcel.py) | **Chains (LCEL)** | Declarative pipe operator `prompt \| llm \| parser` |
-| [`09_capstone_use_case_app.py`](09_capstone_use_case_app.py) | **Capstone UI App** | Interactive Gradio web interface, dynamic temperature selector |
-| [`10_production_grade_app.py`](10_production_grade_app.py) | **Enterprise Discovery Copilot** | **Production-grade**: 2x2 Feasibility Matrix, 1-click report export, history tracking |
-| [`llm_foundations_infographic.html`](llm_foundations_infographic.html) | **Developer Infographic** | Pixel-perfect 9-step roadmap generator with 1-click 4K PNG export |
+### 🚀 Production Application (Root)
+* **[`app.py`](app.py)** (and [`10_production_grade_app.py`](10_production_grade_app.py)): The main enterprise AI Use-Case Discovery Copilot. Features 2x2 Feasibility Matrix scoring, Pydantic v2 data validation, 1-click Markdown export, and historical discovery comparison.
+
+### 📚 Hands-on Learning Curriculum (`learning/`)
+
+| Step | Script | Topic & Core Concepts |
+| :---: | :--- | :--- |
+| **00** | [`learning/00_environment_setup_check.py`](learning/00_environment_setup_check.py) | **Environment Setup**: Python 3.11+, `uv` package manager, `.env` secret hygiene |
+| **01** | [`learning/01_raw_llm_api_call.py`](learning/01_raw_llm_api_call.py) | **Raw API Protocol**: OpenAI-compatible client, payload anatomy, tokens vs words |
+| **02** | [`learning/02_langchain_framework_intro.py`](learning/02_langchain_framework_intro.py) | **Framework Abstraction**: Raw HTTP boilerplate vs LangChain unified `.invoke()` |
+| **03** | [`learning/03_temperature_tuning.py`](learning/03_temperature_tuning.py) | **The Creativity Dial**: Deterministic (0.0) for code/audit vs Creative (0.9) |
+| **04** | [`learning/04_system_and_user_roles.py`](learning/04_system_and_user_roles.py) | **System vs User Roles**: Persona steering (SRE engineer vs Business Manager) |
+| **05** | [`learning/05_token_streaming.py`](learning/05_token_streaming.py) | **Token Streaming**: `.stream()`, Time-To-First-Token (TTFT), terminal UX |
+| **06** | [`learning/06_prompt_templates.py`](learning/06_prompt_templates.py) | **Prompt Templates**: `ChatPromptTemplate` with dynamic `{placeholders}` |
+| **07** | [`learning/07_structured_output_pydantic.py`](learning/07_structured_output_pydantic.py) | **Structured Outputs**: Pydantic `BaseModel` & `Field` for strongly-typed contracts |
+| **08** | [`learning/08_lcel_chain_pipeline.py`](learning/08_lcel_chain_pipeline.py) | **Chains (LCEL)**: Declarative Unix pipe operator `prompt \| llm \| parser` |
+| **09** | [`learning/09_capstone_mvp_app.py`](learning/09_capstone_mvp_app.py) | **Capstone MVP App**: Baseline interactive Gradio discovery UI |
+
 
 ---
 
@@ -77,14 +81,15 @@ This repository includes automated CI/CD workflows under [`.github/workflows/`](
 
 3. **Verify setup**:
    ```bash
-   uv run 00_setup_check.py
+   uv run learning/00_environment_setup_check.py
    ```
 
 4. **Run the Production-Grade Application**:
    ```bash
-   uv run 10_production_grade_app.py
+   uv run app.py
    ```
    Open [http://127.0.0.1:7860](http://127.0.0.1:7860) in your browser.
+
 
 ---
 
